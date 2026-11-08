@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: El Paraíso Gonzalo API
+  version: 1.0.0
+  description: Versioned API contract. Financial actions are permission-gated and unavailable until provider and regulatory approvals are configured.
+servers:
+  - url: https://api.elparaisogonzalo.net/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Service health
+      responses:
+        '200': { description: Healthy service }
+  /auth/register:
+    post:
+      security: []
+      summary: Register customer through configured identity service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12, writeOnly: true }
+      responses:
+        '201': { description: Created }
+        '409': { description: Account conflict }
+  /auth/login:
+    post:
+      security: []
+      summary: Authenticate and initiate MFA
+      responses:
+        '200': { description: Authentication challenge }
+        '401': { description: Invalid credentials }
+  /users/me:
+    get:
+      summary: Current customer profile
+      responses:
+        '200': { description: Profile }
+  /identity/verifications:
+    post:
+      summary: Start KYC verification
+      responses:
+        '202': { description: Verification submitted }
+        '403': { description: Country/product unavailable }
+  /wallets:
+    get:
+      summary: List linked and provider-custodied wallets
+      responses:
+        '200': { description: Wallet list }
+    post:
+      summary: Create wallet using approved custody partner
+      responses:
+        '201': { description: Wallet created }
+        '403': { description: Product not authorised }
+  /accounts:
+    get:
+      summary: List customer accounts
+      responses:
+        '200': { description: Accounts }
+  /balances:
+    get:
+      summary: Get ledger-derived balances
+      responses:
+        '200': { description: Balances }
+  /transactions:
+    get:
+      summary: List ledger transactions
+      responses:
+        '200': { description: Transactions }
+  /payments/deposits:
+    post:
+      summary: Create fiat deposit instruction
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': { description: Deposit instruction }
+        '403': { description: Product not authorised }
+  /payments/withdrawals:
+    post:
+      summary: Request fiat payout
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { description: Payout queued for risk and compliance checks }
+        '403': { description: Product not authorised }
+  /exchange/quotes:
+    post:
+      summary: Request an executable quote from approved liquidity provider
+      responses:
+        '200': { description: Quote }
+        '403': { description: Product not authorised }
+  /exchange/orders:
+    post:
+      summary: Execute a valid quote
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { description: Order accepted }
+        '403': { description: Product not authorised }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 128 }

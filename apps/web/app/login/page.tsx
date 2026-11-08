@@ -1,0 +1,3 @@
+import { Brand } from '../../components/brand';
+
+export default function Login(){return <main className="shell"><nav className="top"><Brand/><span className="pill">SECURE ACCESS</span></nav><section className="hero"><div className="eyebrow">Account access</div><h1>Welcome back.</h1><p>Authentication is not connected yet. This screen is intentionally non-functional until the selected identity provider, MFA, session controls and account recovery flows have passed security review.</p><div className="notice">Do not enter a real password here. No credentials are collected by this demonstration screen.</div><a className="cta" href="/">Return to overview</a></section></main>}
