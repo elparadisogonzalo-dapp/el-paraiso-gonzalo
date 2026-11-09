@@ -1,191 +1,264 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum UserStatus { PENDING ACTIVE SUSPENDED CLOSED }
-enum KycStatus { NOT_STARTED PENDING VERIFIED REJECTED EXPIRED }
-enum WalletType { SELF_CUSTODY CUSTODIAL }
-enum AccountType { FIAT CRYPTO CLEARING FEES }
-enum LedgerStatus { PENDING POSTED REVERSED }
-enum OrderStatus { CREATED PENDING COMPLETED FAILED CANCELLED HELD }
-enum ComplianceStatus { OPEN REVIEW ESCALATED CLOSED }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum WalletType {
+  SELF_CUSTODY
+  CUSTODIAL
+}
+
+enum AccountType {
+  FIAT
+  CRYPTO
+  CLEARING
+  FEES
+}
+
+enum LedgerStatus {
+  PENDING
+  POSTED
+  REVERSED
+}
+
+enum OrderStatus {
+  CREATED
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  HELD
+}
+
+enum ComplianceStatus {
+  OPEN
+  REVIEW
+  ESCALATED
+  CLOSED
+}
 
 model User {
-  id String @id @default(cuid())
-  email String @unique
-  status UserStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profile UserProfile?
-  kyc KycVerification[]
-  wallets Wallet[]
-  accounts Account[]
+  id          String            @id @default(cuid())
+  email       String            @unique
+  status      UserStatus        @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  profile     UserProfile?
+  kyc         KycVerification[]
+  wallets     Wallet[]
+  accounts    Account[]
   auditEvents AuditEvent[]
 }
+
 model UserProfile {
-  id String @id @default(cuid())
-  userId String @unique
-  legalName String?
-  countryCode String @db.Char(2)
-  phoneE164 String?
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  legalName   String?
+  countryCode String   @db.Char(2)
+  phoneE164   String?
   dateOfBirth DateTime?
-  user User @relation(fields:[userId], references:[id])
+  user        User     @relation(fields: [userId], references: [id])
 }
+
 model KycVerification {
-  id String @id @default(cuid())
-  userId String
-  provider String
-  providerReference String? @unique
-  status KycStatus @default(NOT_STARTED)
-  riskLevel String?
-  reviewedAt DateTime?
-  createdAt DateTime @default(now())
-  user User @relation(fields:[userId], references:[id])
-  @@index([userId,status])
+  id                String    @id @default(cuid())
+  userId            String
+  provider          String
+  providerReference String?   @unique
+  status            KycStatus @default(NOT_STARTED)
+  riskLevel         String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
 }
+
 model Wallet {
-  id String @id @default(cuid())
-  userId String
-  type WalletType
-  provider String
-  providerWalletRef String? @unique
-  label String?
-  countryCode String @db.Char(2)
-  createdAt DateTime @default(now())
-  user User @relation(fields:[userId], references:[id])
-  addresses WalletAddress[]
+  id                String          @id @default(cuid())
+  userId            String
+  type              WalletType
+  provider          String
+  providerWalletRef String?         @unique
+  label             String?
+  countryCode       String          @db.Char(2)
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id])
+  addresses         WalletAddress[]
+
   @@index([userId])
 }
+
 model WalletAddress {
-  id String @id @default(cuid())
-  walletId String
-  asset String
-  network String
-  address String
+  id        String   @id @default(cuid())
+  walletId  String
+  asset     String
+  network   String
+  address   String
   createdAt DateTime @default(now())
-  wallet Wallet @relation(fields:[walletId], references:[id])
-  @@unique([network,address])
+  wallet    Wallet   @relation(fields: [walletId], references: [id])
+
+  @@unique([network, address])
   @@index([walletId])
 }
+
 model Asset {
-  id String @id @default(cuid())
-  code String @unique
-  name String
-  kind String
+  id       String    @id @default(cuid())
+  code     String    @unique
+  name     String
+  kind     String
   decimals Int
-  network String?
-  enabled Boolean @default(false)
+  network  String?
+  enabled  Boolean   @default(false)
   accounts Account[]
 }
+
 model Account {
-  id String @id @default(cuid())
-  userId String?
-  assetId String
-  type AccountType
-  accountCode String @unique
-  createdAt DateTime @default(now())
-  user User? @relation(fields:[userId], references:[id])
-  asset Asset @relation(fields:[assetId], references:[id])
-  entries LedgerEntry[]
-  @@index([userId,assetId])
+  id          String        @id @default(cuid())
+  userId      String?
+  assetId     String
+  type        AccountType
+  accountCode String        @unique
+  createdAt   DateTime      @default(now())
+  user        User?         @relation(fields: [userId], references: [id])
+  asset       Asset         @relation(fields: [assetId], references: [id])
+  entries     LedgerEntry[]
+
+  @@index([userId, assetId])
 }
+
 model LedgerTransaction {
-  id String @id @default(cuid())
-  reference String @unique
-  status LedgerStatus @default(PENDING)
-  description String
-  idempotencyKey String @unique
-  sourceSystem String
-  postedAt DateTime?
-  createdAt DateTime @default(now())
-  entries LedgerEntry[]
-  @@index([status,createdAt])
+  id             String        @id @default(cuid())
+  reference      String        @unique
+  status         LedgerStatus  @default(PENDING)
+  description    String
+  idempotencyKey String        @unique
+  sourceSystem   String
+  postedAt       DateTime?
+  createdAt      DateTime      @default(now())
+  entries        LedgerEntry[]
+
+  @@index([status, createdAt])
 }
+
 model LedgerEntry {
-  id String @id @default(cuid())
+  id            String           @id @default(cuid())
   transactionId String
-  accountId String
-  amountMinor BigInt
-  currency String
-  createdAt DateTime @default(now())
-  transaction LedgerTransaction @relation(fields:[transactionId], references:[id])
-  account Account @relation(fields:[accountId], references:[id])
-  @@index([accountId,createdAt])
+  accountId     String
+  amountMinor   BigInt
+  currency      String
+  createdAt     DateTime         @default(now())
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  account       Account          @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, createdAt])
   @@index([transactionId])
 }
+
 model PaymentOrder {
-  id String @id @default(cuid())
-  userId String
-  provider String
-  providerReference String? @unique
-  direction String
-  amountMinor BigInt
-  currency String
-  status OrderStatus @default(CREATED)
-  idempotencyKey String @unique
-  countryCode String @db.Char(2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@index([userId,createdAt])
+  id                String      @id @default(cuid())
+  userId            String
+  provider          String
+  providerReference String?     @unique
+  direction         String
+  amountMinor       BigInt
+  currency          String
+  status            OrderStatus @default(CREATED)
+  idempotencyKey    String      @unique
+  countryCode       String      @db.Char(2)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId, createdAt])
 }
+
 model ExchangeOrder {
-  id String @id @default(cuid())
-  userId String
-  provider String
-  providerOrderId String? @unique
-  baseAsset String
-  quoteAsset String
-  baseAmount String
-  quoteAmount String?
-  status OrderStatus @default(CREATED)
-  idempotencyKey String @unique
-  countryCode String @db.Char(2)
-  createdAt DateTime @default(now())
-  @@index([userId,createdAt])
+  id             String      @id @default(cuid())
+  userId         String
+  provider       String
+  providerOrderId String?     @unique
+  baseAsset      String
+  quoteAsset     String
+  baseAmount     String
+  quoteAmount    String?
+  status         OrderStatus @default(CREATED)
+  idempotencyKey String      @unique
+  countryCode    String      @db.Char(2)
+  createdAt      DateTime    @default(now())
+
+  @@index([userId, createdAt])
 }
+
 model ComplianceCase {
-  id String @id @default(cuid())
+  id           String          @id @default(cuid())
   subjectUserId String?
-  caseType String
-  status ComplianceStatus @default(OPEN)
-  severity String
-  assignedTo String?
-  resolution String?
-  createdAt DateTime @default(now())
-  closedAt DateTime?
-  @@index([status,severity])
+  caseType     String
+  status       ComplianceStatus @default(OPEN)
+  severity     String
+  assignedTo   String?
+  resolution   String?
+  createdAt    DateTime        @default(now())
+  closedAt     DateTime?
+
+  @@index([status, severity])
 }
+
 model AuditEvent {
-  id String @id @default(cuid())
+  id          String   @id @default(cuid())
   actorUserId String?
-  action String
+  action      String
   resourceType String
-  resourceId String?
-  ipAddress String?
-  userAgent String?
-  metadata Json?
-  createdAt DateTime @default(now())
-  user User? @relation(fields:[actorUserId], references:[id])
-  @@index([actorUserId,createdAt])
-  @@index([resourceType,resourceId])
+  resourceId  String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId, createdAt])
+  @@index([resourceType, resourceId])
 }
+
 model IdempotencyRecord {
-  id String @id @default(cuid())
-  key String @unique
+  id          String   @id @default(cuid())
+  key         String   @unique
   requestHash String
-  response Json?
-  status String
-  createdAt DateTime @default(now())
-  expiresAt DateTime
+  response    Json?
+  status      String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
   @@index([expiresAt])
 }
+
 model ProviderWebhookEvent {
-  id String @id @default(cuid())
-  provider String
-  eventId String
-  eventType String
-  payload Json
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  eventType   String
+  payload     Json
   processedAt DateTime?
-  receivedAt DateTime @default(now())
-  @@unique([provider,eventId])
-  @@index([processedAt,receivedAt])
+  receivedAt  DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([processedAt, receivedAt])
 }

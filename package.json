@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.4.1",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"pnpm --filter @epg/api dev\" \"pnpm --filter @epg/web dev\"",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @epg/api exec prisma generate --schema ../../prisma/schema.prisma && pnpm -r build",
     "lint": "pnpm -r lint",
     "db:generate": "pnpm --filter @epg/api prisma:generate",
     "db:migrate": "pnpm --filter @epg/api prisma:migrate"
